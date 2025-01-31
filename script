@@ -1,0 +1,121 @@
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.models import Model
+import matplotlib.pyplot as plt
+import os
+import kagglehub
+
+# Download latest version
+path = kagglehub.dataset_download("imsparsh/flowers-dataset")
+
+print("Path to dataset files:", path)
+
+# Caminho onde o dataset foi baixado
+dataset_path = path
+
+# Definir caminhos para treino e validação
+train_dir = os.path.join(dataset_path, "train")
+validation_dir = os.path.join(dataset_path, "validation")
+
+# Parâmetros
+batch_size = 32
+img_size = (224, 224)
+
+# Data augmentation e pré-processamento
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+val_datagen = ImageDataGenerator(rescale=1./255)
+import math
+
+# Calcular steps_per_epoch e validation_steps
+steps_per_epoch = math.ceil(train_generator.samples / batch_size)
+validation_steps = math.ceil(val_generator.samples / batch_size)
+
+# Treinamento
+history = model.fit(
+    train_generator,
+    steps_per_epoch=steps_per_epoch,  # Número de batches por época
+    validation_data=val_generator,
+    validation_steps=validation_steps,  # Número de batches de validação
+    epochs=10
+)
+train_dir = path # Path dos dados de treinamento
+validation_dir = path # Path dos dados de validação
+# Geradores de dados
+train_generator = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=img_size,
+    batch_size=batch_size,
+    class_mode='categorical'
+).repeat()
+
+val_generator = val_datagen.flow_from_directory(
+    validation_dir,
+    target_size=img_size,
+    batch_size=batch_size,
+    class_mode='categorical'
+).repeat()
+
+# Carregar o modelo VGG16 pré-treinado
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+
+# Congelar as camadas do modelo base
+for layer in base_model.layers:
+    layer.trainable = False
+
+# Adicionar novas camadas fully connected
+x = Flatten()(base_model.output)
+x = Dense(256, activation='relu')(x)
+output = Dense(5, activation='softmax')(x)  # 5 classes para o Flowers Dataset
+
+# Criar o modelo final
+model = Model(base_model.input, output)
+
+# Compilar o modelo
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Calcular steps_per_epoch e validation_steps
+steps_per_epoch = train_generator.samples // batch_size
+validation_steps = val_generator.samples // batch_size
+
+# Treinamento
+epochs = 10
+history = model.fit(
+    train_generator,
+    steps_per_epoch=steps_per_epoch,
+    validation_data=val_generator,
+    validation_steps=validation_steps,
+    epochs=epochs
+)
+
+# Avaliação final
+val_loss, val_accuracy = model.evaluate(val_generator, steps=validation_steps)
+print(f'Validação - Loss: {val_loss}, Acurácia: {val_accuracy}')
+
+# Plotar gráficos de acurácia e loss
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Acurácia durante o Treinamento')
+plt.xlabel('Época')
+plt.ylabel('Acurácia')
+plt.legend()
+plt.show()
+
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Loss durante o Treinamento')
+plt.xlabel('Época')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
