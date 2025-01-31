@@ -55,3 +55,6 @@ O modelo alcançou os seguintes resultados:
 Para mais detalhes sobre o projeto, confira a nota técnica no Medium:
 https://medium.com/@dev.andresilva/transfer-learning-com-vgg16-classifica%C3%A7%C3%A3o-de-flores-usando-feature-extractor-151d9e294953
 
+### Instalação
+1. Clone o repositório:
+   git clone https://github.com/andrefelix93/TrabalhoFinal-ML.git
